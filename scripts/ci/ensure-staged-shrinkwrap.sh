@@ -19,25 +19,18 @@
 set -e
 set -u
 
-if [ -z "$TRAVIS_OS_NAME" ]; then
-  echo "This script is only meant to run in Travis CI" 1>&2
+echo "node version: $(node --version)"
+echo "npm version: $(npm --version)"
+
+SHRINKWRAP_FILE=npm-shrinkwrap.json
+
+npm shrinkwrap --dev
+
+if [[ -n $(git status -s "$SHRINKWRAP_FILE") ]]; then
+  echo "There are unstaged $SHRINKWRAP_FILE changes. Please commit the result of:" 1>&2
+  echo ""
+  echo "    npm shrinkwrap --dev" 1>&2
+  echo ""
+  git --no-pager diff "$SHRINKWRAP_FILE"
   exit 1
-fi
-
-if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-  ./scripts/build/docker/run-command.sh \
-    -r "$TARGET_ARCH" \
-    -s "$(pwd)" \
-    -c "make info && make electron-develop"
-else
-  ./scripts/build/check-dependency.sh pip
-  ./scripts/build/check-dependency.sh brew
-  ./scripts/build/check-dependency.sh make
-  ./scripts/build/check-dependency.sh npm
-
-  npm config set spin=false
-  pip install codespell==1.9.2 awscli cpplint
-  brew install afsctool jq
-  make info
-  make electron-develop
 fi
